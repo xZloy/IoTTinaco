@@ -86,11 +86,13 @@ def ingest(payload: ReadingIn):
             flow_lpm=payload.flow_lpm,
             tds_ppm=payload.tds_ppm,
             water_temp_c=payload.waterTempC,
+            humidity_pct=payload.humidity_pct,  
             pump=payload.pump,
             valve=payload.valve,
             alerts=payload.alerts or [],
         )
-        db.add(r); db.commit()
+        db.add(r)
+        db.commit()
         return {"readingId": r.id}
     finally:
         db.close()
