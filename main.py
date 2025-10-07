@@ -38,7 +38,7 @@ class Reading(Base):
     pump  = Column(String, nullable=True)   # "ON"/"OFF"
     valve = Column(String, nullable=True)   # "OPEN"/"CLOSED"
     alerts = Column(JSONType, nullable=True)
-
+    humidity_pct = Column(Float, nullable=True)
 Base.metadata.create_all(engine)
 
 # Esquemas
@@ -52,7 +52,7 @@ class ReadingIn(BaseModel):
     pump: Optional[str] = None
     valve: Optional[str] = None
     alerts: Optional[List[str]] = None
-
+    humidity_pct: Optional[float] = None
 class ReadingOut(BaseModel):
     id: str
     device_id: str
