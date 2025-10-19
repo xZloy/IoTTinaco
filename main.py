@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional, List, Literal
 from fastapi import FastAPI, Query
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -10,12 +10,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.types import JSON as SQLITE_JSON
 
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")  # en Render usarás Postgres
+DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    # fallback para correr local si quieres probar
     DATABASE_URL = "sqlite:///./data.db"
 
-# Engine + Session
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
     JSONType = SQLITE_JSON
@@ -25,7 +23,6 @@ else:
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
 
-# Modelo
 class Reading(Base):
     __tablename__ = "readings"
     id = Column(String, primary_key=True)
@@ -35,13 +32,12 @@ class Reading(Base):
     flow_lpm  = Column(Float, nullable=True)
     tds_ppm   = Column(Float, nullable=True)
     water_temp_c = Column(Float, nullable=True)
-    pump  = Column(String, nullable=True)   # "ON"/"OFF"
-    valve = Column(String, nullable=True)   # "OPEN"/"CLOSED"
+    pump  = Column(String, nullable=True)
+    valve = Column(String, nullable=True)
     alerts = Column(JSONType, nullable=True)
     humidity_pct = Column(Float, nullable=True)
 Base.metadata.create_all(engine)
 
-# Esquemas
 class ReadingIn(BaseModel):
     device_id: str = Field(..., min_length=1)
     ts: Optional[datetime] = None
@@ -53,6 +49,7 @@ class ReadingIn(BaseModel):
     valve: Optional[str] = None
     alerts: Optional[List[str]] = None
     humidity_pct: Optional[float] = None
+
 class ReadingOut(BaseModel):
     id: str
     device_id: str
@@ -66,7 +63,6 @@ class ReadingOut(BaseModel):
     alerts: list | None = None
     class Config: from_attributes = True
 
-# App
 app = FastAPI(title="Tinaco API (simple cloud)", version="0.1.0")
 
 @app.get("/health")
@@ -86,7 +82,7 @@ def ingest(payload: ReadingIn):
             flow_lpm=payload.flow_lpm,
             tds_ppm=payload.tds_ppm,
             water_temp_c=payload.waterTempC,
-            humidity_pct=payload.humidity_pct,  
+            humidity_pct=payload.humidity_pct,
             pump=payload.pump,
             valve=payload.valve,
             alerts=payload.alerts or [],
@@ -110,6 +106,30 @@ def list_readings(
         if from_ts: q = q.filter(Reading.ts >= from_ts)
         if to_ts:   q = q.filter(Reading.ts <= to_ts)
         q = q.order_by(Reading.ts.desc()).limit(limit)
+        return q.all()
+    finally:
+        db.close()
+
+@app.get("/readings/all", response_model=list[ReadingOut])
+def list_all_readings(
+    device_id: Optional[str] = None,
+    limit: int = Query(10000, ge=1, le=100000),
+    offset: int = Query(0, ge=0),
+    from_ts: Optional[datetime] = Query(None, alias="from"),
+    to_ts: Optional[datetime] = Query(None, alias="to"),
+    sort: Literal["asc", "desc"] = Query("desc"),
+):
+    db = SessionLocal()
+    try:
+        q = db.query(Reading)
+        if device_id:
+            q = q.filter(Reading.device_id == device_id)
+        if from_ts:
+            q = q.filter(Reading.ts >= from_ts)
+        if to_ts:
+            q = q.filter(Reading.ts <= to_ts)
+        q = q.order_by(Reading.ts.asc() if sort == "asc" else Reading.ts.desc())
+        q = q.offset(offset).limit(limit)
         return q.all()
     finally:
         db.close()
