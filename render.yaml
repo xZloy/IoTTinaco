@@ -1,0 +1,22 @@
+databases:
+  - name: tinaco_db
+    plan: free
+    databaseName: tinaco_db
+    user: tinaco_user
+
+services:
+  - type: web
+    plan: free
+    name: TINACO
+    runtime: python
+    buildCommand: './build.sh'
+    startCommand: 'python -m gunicorn TINACO.asgi:application -k uvicorn.workers.UvicornWorker'
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tinaco_db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
