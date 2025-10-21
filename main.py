@@ -58,10 +58,12 @@ class ReadingOut(BaseModel):
     flow_lpm: float | None = None
     tds_ppm: float | None = None
     water_temp_c: float | None = None
+    humidity_pct: float | None = None   
     pump: str | None = None
     valve: str | None = None
     alerts: list | None = None
     class Config: from_attributes = True
+
 
 app = FastAPI(title="Tinaco API (simple cloud)", version="0.1.0")
 
@@ -142,6 +144,8 @@ def analytics_daily(device_id: str):
       AVG(level_pct) AS avg_level,
       SUM(COALESCE(flow_lpm,0))/60.0 AS approx_liters,
       AVG(tds_ppm) AS avg_tds,
+      AVG(water_temp_c) AS avg_temp_c,        
+      AVG(humidity_pct) AS avg_humidity_pct,  
       COUNT(*) AS samples
     FROM readings
     WHERE device_id = :device_id
@@ -152,9 +156,19 @@ def analytics_daily(device_id: str):
     db = SessionLocal()
     try:
         rows = db.execute(text(sql), {"device_id": device_id}).fetchall()
+        
         return [
-            {"day": str(day), "avg_level": a, "approx_liters": l, "avg_tds": t, "samples": s}
-            for (day, a, l, t, s) in rows
+            {
+                "day": str(day),
+                "avg_level": avg_level,
+                "approx_liters": approx_liters,
+                "avg_tds": avg_tds,
+                "avg_temp_c": avg_temp_c,
+                "avg_humidity_pct": avg_hum,
+                "samples": samples
+            }
+            for (day, avg_level, approx_liters, avg_tds, avg_temp_c, avg_hum, samples) in rows
         ]
     finally:
         db.close()
+
