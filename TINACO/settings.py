@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'TINACO.wsgi.application'
 
 DATABASES = {
 	'default': dj_database_url.config(
-		default='postgresql://tinaco_user:uwticU9o3k41Co9qjUBU9pNMg1hCEFwc@dpg-d3cru5ili9vc73drp020-a.oregon-postgres.render.com/tinaco_db',
+		default='postgresql://tinaco_user:CzFd5fydRKkABkmnpldBoyTIYdYDK84N@dpg-d47epn3ipnbc73cqmfgg-a.oregon-postgres.render.com/tinaco_bd',
 		conn_max_age=600
 	)
 }

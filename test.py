@@ -2,10 +2,10 @@ import psycopg2
 
 try:
 	conn = psycopg2.connect(
-		host="dpg-d3cru5ili9vc73drp020-a.oregon-postgres.render.com",
+		host="dpg-d47epn3ipnbc73cqmfgg-a.oregon-postgres.render.com",
 		database="tinaco_db",
 		user="tinaco_user",
-		password="uwticU9o3k41Co9qjUBU9pNMg1hCEFwc"
+		password="CzFd5fydRKkABkmnpldBoyTIYdYDK84N"
 	)
 	print("Conexion exitosa a PostgreSQL")
 
